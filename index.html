@@ -2,11 +2,12 @@
 <html lang="pt-BR">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Horário</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <title>Controle de Horário</title>
 </head>
 
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
@@ -16,30 +17,36 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
                 <label class="block mb-1 font-medium">Entrada:</label>
-                <input type="time" id="entrada" class="w-full border rounded px-3 py-2">
+                <input type="time" id="entrada" class="w-full border rounded px-3 py-2" />
             </div>
             <div>
-                <label class="block mb-1 font-medium">Saída Almoço:</label>
-                <input type="time" id="almoco_saida" class="w-full border rounded px-3 py-2">
+                <label class="block mb-1 font-medium">Saída para Almoço:</label>
+                <input type="time" id="almoco_saida" class="w-full border rounded px-3 py-2" />
             </div>
             <div>
-                <label class="block mb-1 font-medium">Volta Almoço:</label>
-                <input type="time" id="almoco_volta" class="w-full border rounded px-3 py-2">
+                <label class="block mb-1 font-medium">Volta do Almoço:</label>
+                <input type="time" id="almoco_volta" class="w-full border rounded px-3 py-2" />
             </div>
             <div>
                 <label class="block mb-1 font-medium">Saída:</label>
-                <input type="time" id="saida" class="w-full border rounded px-3 py-2">
+                <input type="time" id="saida" class="w-full border rounded px-3 py-2" />
             </div>
         </div>
 
-        <button id="salvar"
-            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full mb-6">Salvar</button>
+        <button id="salvar" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full mb-6">
+            Salvar
+        </button>
 
         <h2 class="text-xl font-semibold mb-2">Histórico</h2>
-        <div id="historico" class="overflow-x-auto"></div>
+        <div id="historico" class="flex flex-wrap gap-2"></div>
     </div>
 
     <script>
+        function formatarDataBr(iso) {
+            const [ano, mes, dia] = iso.split('-');
+            return `${dia}/${mes}/${ano}`;
+        }
+
         function salvarHorario() {
             const hoje = new Date().toISOString().split("T")[0];
             const horarios = {
@@ -48,9 +55,10 @@
                 almoco_volta: $('#almoco_volta').val(),
                 saida: $('#saida').val()
             };
-            let banco = JSON.parse(localStorage.getItem('horarios_trampo') || '{}');
+
+            let banco = JSON.parse(localStorage.getItem('horarios_trabalho') || '{}');
             banco[hoje] = horarios;
-            localStorage.setItem('horarios_trampo', JSON.stringify(banco));
+            localStorage.setItem('horarios_trambalho', JSON.stringify(banco));
 
             $('#entrada').val('');
             $('#almoco_saida').val('');
@@ -78,22 +86,46 @@
         }
 
         function mostrarHistorico() {
-            let banco = JSON.parse(localStorage.getItem('horarios_trampo') || '{}');
-            let html = '<table class="min-w-full table-auto border border-gray-300"><thead class="bg-gray-200"><tr><th class="px-2 py-1 border">Data</th><th class="px-2 py-1 border">Entrada</th><th class="px-2 py-1 border">Alm. Saída</th><th class="px-2 py-1 border">Alm. Volta</th><th class="px-2 py-1 border">Saída</th><th class="px-2 py-1 border">Horas Trab.</th></tr></thead><tbody>';
+            let banco = JSON.parse(localStorage.getItem('horarios_trabalho') || '{}');
+            let html = '<div class="flex flex-wrap gap-2">';
 
-            Object.keys(banco).sort().reverse().forEach(dia => {
-                const h = banco[dia];
-                html += `<tr class="text-center"><td class="border px-2 py-1">${dia}</td><td class="border px-2 py-1">${h.entrada || ''}</td><td class="border px-2 py-1">${h.almoco_saida || ''}</td><td class="border px-2 py-1">${h.almoco_volta || ''}</td><td class="border px-2 py-1">${h.saida || ''}</td><td class="border px-2 py-1">${calcularHoras(h)}</td></tr>`;
+            Object.keys(banco).sort().reverse().forEach(dataIso => {
+                const dataBr = formatarDataBr(dataIso);
+                html += `<button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" onclick="mostrarDetalhes('${dataIso}')">${dataBr}</button>`;
             });
 
-            html += '</tbody></table>';
+            html += '</div>';
             $('#historico').html(html);
+        }
+
+        function mostrarDetalhes(dataIso) {
+            const banco = JSON.parse(localStorage.getItem('horarios_trabalho') || '{}');
+            const h = banco[dataIso];
+            const dataBr = formatarDataBr(dataIso);
+
+            let html = `
+        <table class="table-auto w-full text-left border-collapse">
+            <tr><td class="font-semibold pr-4">Data:</td><td>${dataBr}</td></tr>
+            <tr><td class="font-semibold pr-4">Entrada:</td><td>${h.entrada || '-'}</td></tr>
+            <tr><td class="font-semibold pr-4">Saída Almoço:</td><td>${h.almoco_saida || '-'}</td></tr>
+            <tr><td class="font-semibold pr-4">Volta Almoço:</td><td>${h.almoco_volta || '-'}</td></tr>
+            <tr><td class="font-semibold pr-4">Saída:</td><td>${h.saida || '-'}</td></tr>
+            <tr><td class="font-semibold pr-4">Horas Trabalhadas:</td><td>${calcularHoras(h)}</td></tr>
+        </table>
+    `;
+
+            Swal.fire({
+                title: `Detalhes do dia ${dataBr}`,
+                html: html,
+                confirmButtonText: 'Fechar'
+            });
         }
 
         $(document).ready(() => {
             $('#salvar').click(salvarHorario);
             mostrarHistorico();
         });
+
     </script>
 </body>
 
