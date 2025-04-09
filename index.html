@@ -51,6 +51,12 @@
             let banco = JSON.parse(localStorage.getItem('horarios_trampo') || '{}');
             banco[hoje] = horarios;
             localStorage.setItem('horarios_trampo', JSON.stringify(banco));
+
+            $('#entrada').val('');
+            $('#almoco_saida').val('');
+            $('#almoco_volta').val('');
+            $('#saida').val('');
+
             mostrarHistorico();
         }
 
